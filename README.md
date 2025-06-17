@@ -1,2 +1,2 @@
-# WINDOWS_PROGRAMMING
-Diving into building programs for windows systems
+# 💻 WINDOWS PROGRAMMING JOURNEY 🛣
+Diving into building programs for Windows OS
