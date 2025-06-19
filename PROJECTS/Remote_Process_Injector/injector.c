@@ -36,7 +36,7 @@ void _tmain(int argc, char* argv[])
     // Start the chilu process.
     BOOL creationResult;
 
-    creationResult = CreateProcess(argv[1], NULL, NULL, NULL, FALSE, NORMAL_PRIORITY_CLASS | CREATE_NEW_CONSOLE | CREATE_NEW_PROCESS_GROUP, NULL, NULL, &startup_info, &process_info);
+    creationResult = CreateProcess(argv[1], NULL, NULL, NULL, FALSE, NORMAL_PRIORITY_CLASS | CREATE_SUSPENDED | CREATE_NEW_CONSOLE | CREATE_NEW_PROCESS_GROUP, NULL, NULL, &startup_info, &process_info);
     
     if (!creationResult)
     {
@@ -44,13 +44,12 @@ void _tmain(int argc, char* argv[])
         return;
     }
 
-    char message[64];
-    snprintf(message, sizeof(message), "[+] Launched Notepad (PID: %lu)[SUCCESS]\n", process_info.dwProcessId); 
-    MessageBox(NULL, message, "SUCCESS", MB_OK);
-    
-    WaitForSingleObject(process_info.hProcess, 1000);
+    printf("[+] Launched Notepad (PID: %lu)[SUCCESS]\n", process_info.dwProcessId);
+
     
     
+    
+
     /* PROCESS INJECTION TIME */
     
     const char* dllPath = "C:\\Users\\kiriko\\Documents\\GIT\\WINDOWS_PROGRAMMING\\PROJECTS\\Remote_Process_Injector\\MyDLL.dll";
@@ -65,6 +64,8 @@ void _tmain(int argc, char* argv[])
     }
     
     printf("Process PID: %lu Opened Successfully!\n", process_info.dwProcessId);
+
+    
     
     // Allocate memory in target.
     
@@ -75,14 +76,15 @@ void _tmain(int argc, char* argv[])
         MEM_COMMIT | MEM_RESERVE,
         PAGE_READWRITE);    
         
-    if (!remote_memory)
-    {
-        printf("VirtualAllocEx Failed! Error: (%lu).\n", GetLastError());
-        CloseHandle(target_process);
+        if (!remote_memory)
+        {
+            printf("VirtualAllocEx Failed! Error: (%lu).\n", GetLastError());
+            CloseHandle(target_process);
         return;
     }
     
     printf("Allocated Memory at %p in target process.\n", remote_memory);
+
     
     // Write payload.
     SIZE_T bytes_written;
@@ -94,11 +96,20 @@ void _tmain(int argc, char* argv[])
         return;
         
     }
+    // printf("Bytes Written: (%lu).\n", bytes_written);
+    // printf("%d Characters Written: (%s).\n",strlen(dllPath), dllPath);
+    // printf("Characters Written: (%c).\n", remote_memory);
+    
+    
+    printf("Still Running...?\n");
+    Sleep(3000);
     
     // Execute remotely.
+    printf("Creating Remote Thread...\n");
     LPDWORD remote_thread_Id;
+    HANDLE remote_thread = CreateRemoteThread(target_process, NULL, 0, remote_memory, NULL, NORMAL_PRIORITY_CLASS | CREATE_SUSPENDED | CREATE_NEW_CONSOLE | CREATE_NEW_PROCESS_GROUP, remote_thread_Id);
     
-    if (!CreateRemoteThread(target_process, NULL, 0, remote_memory, NULL, 0, remote_thread_Id))
+    if (!remote_thread)
     {
         printf("CreateRemoteThread Failed! Error: (%lu).\n", GetLastError());
         CloseHandle(target_process);
@@ -106,7 +117,32 @@ void _tmain(int argc, char* argv[])
         
     }
     
-    LoadLibraryA("MyDLL.dll");
+
+    Sleep(1000);
+    printf("Remote Thread_Id: (%lu).\n", remote_thread_Id);
+    
+    Sleep(1000);
+    
+    printf("Injecting DLL...\n");
+    
+    Sleep(3000);
+
+    if (!LoadLibraryA("MyDLL.dll"))
+    {
+        printf("LoadLibraryA Failed! Error: (%lu).\n", GetLastError());
+        CloseHandle(target_process);
+        return;
+        
+    }
+    else
+    {
+        ResumeThread(process_info.hThread);       
+    }
+    
+    
+    // ResumeThread(remote_thread);
+    
+    WaitForSingleObject(process_info.hProcess, 2000);
     
 
     
