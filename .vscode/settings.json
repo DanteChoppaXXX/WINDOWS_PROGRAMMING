@@ -6,6 +6,7 @@
         "string.h": "c",
         "cwchar": "c",
         "limits": "c",
-        "type_traits": "c"
+        "type_traits": "c",
+        "processthreadsapi.h": "c"
     }
 }
