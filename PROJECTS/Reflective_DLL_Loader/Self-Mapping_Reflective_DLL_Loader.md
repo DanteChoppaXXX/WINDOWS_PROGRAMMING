@@ -181,7 +181,6 @@ Each section will tell you:
 2. Implement the `parser()` function as described above.
 3. Run and observe the output of PE metadata from your DLL file.
 
-Ready to proceed with writing the actual implementation of the parser?
 
 ---
 
@@ -190,6 +189,107 @@ Ready to proceed with writing the actual implementation of the parser?
 * Use `VirtualAlloc()` with `MEM_COMMIT | MEM_RESERVE`, size = `SizeOfImage`.
 * This is the memory block where you’ll reconstruct the DLL.
 * Call this memory block `target_image`.
+
+
+---
+
+### 🔨 Stage 3 — Memory Mapping (Manual Load)
+
+**Mapping the PE image into memory manually**, which is the soul of reflective DLL loading.
+### 🧠 What You’re Emulating:
+
+When `LoadLibrary()` is called by Windows, it:
+
+1. Allocates memory (using `VirtualAlloc`)
+2. Copies over:
+
+   * The **headers**
+   * All **sections** into their proper locations
+3. Fixes relocations
+4. Resolves imports
+5. Calls `DllMain`
+
+You’re now going to **manually do step 1 and 2**: allocate memory and copy headers/sections.
+
+---
+
+### 🧩 Step-by-Step Breakdown
+
+#### ✅ 1. Parse the headers again
+
+You already have this in your `parser()`:
+
+```c
+PIMAGE_DOS_HEADER dos = (PIMAGE_DOS_HEADER) buffer;
+PIMAGE_NT_HEADERS nt = (PIMAGE_NT_HEADERS)(buffer + dos->e_lfanew);
+```
+
+#### ✅ 2. Allocate memory using `VirtualAlloc`
+
+You’ll allocate memory using `nt->OptionalHeader.SizeOfImage`, which is the full size required by the image in memory.
+
+```c
+BYTE* remote_image = VirtualAlloc(NULL, nt->OptionalHeader.SizeOfImage,
+                                   MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+```
+
+✅ Check if `remote_image` is `NULL`. If it is, `VirtualAlloc` failed.
+
+---
+
+#### ✅ 3. Copy the PE headers
+
+```c
+memcpy(remote_image, buffer, nt->OptionalHeader.SizeOfHeaders);
+```
+
+---
+
+#### ✅ 4. Copy each section to its `VirtualAddress`
+
+Loop over the section headers and copy each one from the file buffer to its destination in `remote_image`:
+
+```c
+PIMAGE_SECTION_HEADER section = IMAGE_FIRST_SECTION(nt);
+
+for (int i = 0; i < nt->FileHeader.NumberOfSections; i++, section++) {
+    BYTE* dest = remote_image + section->VirtualAddress;
+    BYTE* src  = buffer + section->PointerToRawData;
+
+    memcpy(dest, src, section->SizeOfRawData);
+}
+```
+
+---
+
+### 🧠 Quick Analogy:
+
+You're **loading the game map into RAM**, byte for byte. No imports resolved, no relocations yet — you're just making it exist in memory exactly as the PE loader would.
+
+---
+
+### ✅ Outcome of This Step:
+
+After this stage, you should now have:
+
+* A **faithful in-memory replica of the DLL**, at the right base address, with all its sections and headers in the correct locations.
+
+We’ll test this before continuing to Stage 4: Relocations.
+
+---
+
+## 🎯 Your Mission
+
+1. Add a function like `manual_map()` that:
+
+   * Accepts `buffer` as input
+   * Allocates memory
+   * Copies headers and sections
+   * Returns the `remote_image` pointer
+
+2. In `_tmain()`, call `manual_map(buffer);`
+
+___
 
 ---
 
