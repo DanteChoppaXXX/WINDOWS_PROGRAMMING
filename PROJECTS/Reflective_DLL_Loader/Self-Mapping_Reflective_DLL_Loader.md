@@ -87,6 +87,102 @@ But for now, local file I/O will do.
 
 ✅ This tells you how big of a memory block to allocate and how to arrange the sections.
 
+### 🔥 **Let’s get deep into the internals of your DLL. Welcome to PE Parsing: Stage 2** 🔥
+This stage is about exploring and interpreting the Portable Executable (PE) file headers — just like the Windows loader would when preparing to load a DLL.
+
+---
+
+### 🧠 **Goal of Stage 2: Understand and Parse PE Headers**
+
+We’re going to write a `parser(BYTE* buffer)` function that does the following:
+
+---
+
+## ✅ Step-by-Step Overview:
+
+### **1. Parse the DOS Header**
+
+The beginning of every PE file is a legacy **MS-DOS header** (`IMAGE_DOS_HEADER`).
+
+```c
+PIMAGE_DOS_HEADER dos = (PIMAGE_DOS_HEADER) buffer;
+```
+
+* **Check**: The first two bytes should be `"MZ"` (0x5A4D). This is the signature.
+* **Field of interest**: `dos->e_lfanew` – gives you the offset to the real PE header.
+
+---
+
+### **2. Parse the NT Headers**
+
+The **NT headers** are located at `buffer + dos->e_lfanew`.
+
+```c
+PIMAGE_NT_HEADERS nt = (PIMAGE_NT_HEADERS)(buffer + dos->e_lfanew);
+```
+
+* **Check**: `nt->Signature` must be `IMAGE_NT_SIGNATURE` (value `0x00004550`, i.e. "PE\0\0").
+* Contains:
+
+  * `IMAGE_FILE_HEADER` – info about machine type, sections, etc.
+  * `IMAGE_OPTIONAL_HEADER` – crucial details about memory layout, entry point, etc.
+
+---
+
+### **3. Print Key Header Info (for learning and debugging)**
+
+Print values such as:
+
+* Number of sections
+* Size of image
+* Address of entry point
+* Image base
+* Section alignment
+* DLL characteristics
+
+✅ This reinforces understanding and ensures our pointer math is correct.
+
+---
+
+### **4. (Optional for now)**: Walk Through Section Headers
+
+You can access section headers right after `IMAGE_NT_HEADERS`.
+
+```c
+PIMAGE_SECTION_HEADER section = IMAGE_FIRST_SECTION(nt);
+```
+
+Each section will tell you:
+
+* Its name (`.text`, `.data`, etc.)
+* Where it’s located in memory
+* Where it is in the file
+* How big it is
+
+---
+
+## 🧱 Your Parser Skeleton:
+
+
+---
+
+## 🛠 Headers You'll Need to Include
+
+```c
+#include <windows.h>
+#include <winnt.h>   // For IMAGE_DOS_HEADER, IMAGE_NT_HEADERS, etc.
+```
+
+---
+
+### ✅ Your Task Now:
+
+1. Add `parser(buffer);` call in your `main()` after reading the DLL.
+2. Implement the `parser()` function as described above.
+3. Run and observe the output of PE metadata from your DLL file.
+
+Ready to proceed with writing the actual implementation of the parser?
+
 ---
 
 ### **3. Allocate Memory for the DLL**
