@@ -9,5 +9,6 @@
         "type_traits": "c",
         "processthreadsapi.h": "c",
         "typeinfo": "c"
-    }
+    },
+    "C_Cpp.default.compilerPath": "C:/msys64/mingw64/bin/gcc.exe"
 }
