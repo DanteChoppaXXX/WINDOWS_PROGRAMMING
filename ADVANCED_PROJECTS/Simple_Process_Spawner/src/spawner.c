@@ -2,7 +2,15 @@
 #include <windows.h>
 #include <tchar.h>
 #include <processthreadsapi.h>
-#include "utils.h"
+#include <string.h>
+
+void usage(char* argv)
+{
+    // Extract the program name from path.
+    char *filename = strrchr(argv, '\\');
+    
+    printf("Usage: %s <\"path\\to\\executable\"> <window behaviour>\nWindow Behaviour (Optional): {\"hidden\", \"minimized\"}\n", (filename+1));
+}
 
 void _tmain(int argc, char* argv[])
 {
@@ -29,7 +37,7 @@ void _tmain(int argc, char* argv[])
     // Start the child process.
     BOOL creationResult;
 
-    creationResult = CreateProcess(argv[1], NULL, NULL, NULL, FALSE, NORMAL_PRIORITY_CLASS | CREATE_NEW_CONSOLE | CREATE_NEW_PROCESS_GROUP, NULL, NULL, &startup_info, &process_info);
+    creationResult = CreateProcess(argv[1], NULL, NULL, NULL, FALSE, NORMAL_PRIORITY_CLASS | CREATE_NO_WINDOW | CREATE_NEW_PROCESS_GROUP, NULL, NULL, &startup_info, &process_info);
     
     if (!creationResult)
     {
